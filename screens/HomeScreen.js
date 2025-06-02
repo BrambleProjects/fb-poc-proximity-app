@@ -1,11 +1,11 @@
 // screens/HomeScreen.js
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
 import * as Location from 'expo-location';
-import MapView, { Marker } from 'react-native-maps';
-import { saveUserLocation } from '../firebase/geo';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import { db } from '../../firebase/firebaseConfig';
+import { saveUserLocation } from '../firebase/geo';
 
 export default function HomeScreen() {
   const [location, setLocation] = useState(null);
@@ -28,7 +28,7 @@ export default function HomeScreen() {
         const newLocation = await Location.getCurrentPositionAsync({});
         setLocation(newLocation.coords);
         console.log('Actualizando ubicación:', newLocation.coords);
-        await saveUserLocation('user_123', newLocation.coords);
+        await saveUserLocation('user_456', newLocation.coords);
 
         const snapshot = await getDocs(collection(db, 'locations'));
         const users = snapshot.docs.map(doc => doc.data());
