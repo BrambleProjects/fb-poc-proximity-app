@@ -1,56 +1,51 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { router } from 'expo-router'; // Importar router para redireccionar
-// Importar la instancia de auth y el listener
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '../firebase/firebaseConfig'; // Importar la instancia de auth (ajusta la ruta si es necesario)
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { app } from '../../firebase/firebaseConfig';
 
+import HomeScreen from '../../screens/HomeScreen'; // Import your HomeScreen
+import LoginScreen from '../../screens/LoginScreen'; // Import your LoginScreen
 
-import LoginScreen from '../screens/LoginScreen'; // Importar la pantalla de Login (ajusta la ruta)
-import HomeScreen from '../../screens/HomeScreen'; // Importar la pantalla principal (ajusta la ruta)
+const auth = getAuth(app);
 
 export default function Index() {
-  // Estado para el usuario autenticado (o null si no hay)
   const [user, setUser] = useState<User | null>(null);
-  // Estado para saber si la verificación inicial está en curso
-  const [loading, setLoading] = useState<boolean>(true); // Inicialmente estamos cargando
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Efecto para escuchar cambios en el estado de autenticación al montar el componente
-  // Este listener también nos sirve como señal de que Firebase Auth ha terminado su inicialización asíncrona.
+  console.log('Index component rendering. Loading:', loading, 'User:', user ? 'Authenticated' : 'Not Authenticated'); // Log al renderizar
+
   useEffect(() => {
+    console.log('useEffect in Index component running'); // Log al entrar en useEffect
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user); // Actualizar estado del usuario
-      setLoading(false); // La verificación inicial de autenticación ha terminado
+      console.log('onAuthStateChanged listener triggered. User:', user ? 'Authenticated' : 'Not Authenticated'); // Log cuando el listener se activa
+      setUser(user);
+      setLoading(false);
+      console.log('Loading state set to false'); // Log después de setLoading(false)
     });
 
-    // Limpiar el listener al desmontar el componente
-    return () => unsubscribe();
-  }, []); // El array vacío [] asegura que este efecto se ejecute solo una vez al montar.
+    console.log('onAuthStateChanged listener set up'); // Log después de configurar el listener
 
-  // Efecto para redirigir basado en el estado de autenticación una vez que 'loading' sea false
-  useEffect(() => {
-    if (!loading) { // Solo redirigir después de que la verificación inicial haya terminado
-      if (!user) { // Si no hay usuario, redirigir al login
-        // Usamos router.replace para ir a la ruta de login
-        // **Asegúrate de que tienes un archivo app/login.tsx que sea la ruta '/login'**
-        router.replace('/login');
-      }
-      // Si hay un usuario, no hacemos nada aquí; el Stack en _layout ya renderiza (tabs)
-    }
-  }, [user, loading]); // Este efecto se ejecuta cuando 'user' o 'loading' cambian
+    return () => {
+      console.log('Cleaning up onAuthStateChanged listener'); // Log al limpiar el listener
+      unsubscribe();
+    };
+  }, []);
 
-  // Mostrar un indicador de carga mientras se verifica el estado inicial de autenticación
   if (loading) {
+    console.log('Rendering Loading...'); // Log al renderizar el estado de carga
     return (
       <View style={styles.container}>
-        <Text>Cargando estado de autenticación...</Text>
+        <Text>Loading...</Text>
       </View>
     );
   }
 
-  // Si no estamos cargando y hay un usuario, renderizar la HomeScreen (el contenido de esta ruta)
-  // Si no hay usuario, la redirección a '/login' en el useEffect anterior se encargará.
-  return <HomeScreen />;
+  console.log('Rendering main content (Login or Home)'); // Log al renderizar Login/Home
+  return (
+    <View style={styles.container}>
+      {user ? <HomeScreen /> : <LoginScreen />}
+    </View>
   );
 }
 

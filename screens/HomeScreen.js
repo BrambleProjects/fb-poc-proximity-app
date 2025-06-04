@@ -4,7 +4,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { db } from '../../firebase/firebaseConfig';
+import { db } from '../firebase/firebaseConfig';
 import { saveUserLocation } from '../firebase/geo';
 
 export default function HomeScreen() {
