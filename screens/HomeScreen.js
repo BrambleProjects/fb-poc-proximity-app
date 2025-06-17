@@ -1,4 +1,3 @@
-// screens/HomeScreen.js
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import * as Location from 'expo-location';
@@ -6,12 +5,16 @@ import MapView, { Marker } from 'react-native-maps';
 import { saveUserLocation } from '../firebase/geo';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
+import { useAuth } from "../Context/AuthContext"; // <--- Importa tu contexto
 
 export default function HomeScreen() {
   const [location, setLocation] = useState(null);
   const [usersNearby, setUsersNearby] = useState([]);
+  const { loggedInUser } = useAuth(); // <--- Obtén el usuario autenticado
 
   useEffect(() => {
+    let interval;
+
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -21,24 +24,40 @@ export default function HomeScreen() {
 
       const currentLocation = await Location.getCurrentPositionAsync({});
       setLocation(currentLocation.coords);
-      console.log('guardando ubicacion')
-      saveUserLocation('user_123', currentLocation.coords);
 
-      const interval = setInterval(async () => {
-        const newLocation = await Location.getCurrentPositionAsync({});
-        setLocation(newLocation.coords);
-        console.log('Actualizando ubicación:', newLocation.coords);
-        await saveUserLocation('user_123', newLocation.coords);
+      // Guarda la ubicación si el usuario está autenticado
+      if (loggedInUser) {
+        try {
+          await saveUserLocation(loggedInUser.email, currentLocation.coords);
+          console.log('Ubicación inicial guardada para', loggedInUser.email);
+        } catch (e) {
+          console.error('Error guardando ubicación inicial:', e);
+        }
+      }
 
-        const snapshot = await getDocs(collection(db, 'locations'));
-        const users = snapshot.docs.map(doc => doc.data());
-        setUsersNearby(users);
-        console.log('Usuarios cercanos cargados:', users.length);
-        }, 60000);
+      interval = setInterval(async () => {
+        try {
+          const newLocation = await Location.getCurrentPositionAsync({});
+          setLocation(newLocation.coords);
 
-      return () => clearInterval(interval);
+          if (loggedInUser) {
+            await saveUserLocation(loggedInUser.email, newLocation.coords);
+            console.log('Ubicación actualizada para', loggedInUser.email);
+          }
+
+          const snapshot = await getDocs(collection(db, 'locations'));
+          const users = snapshot.docs.map(doc => doc.data());
+          setUsersNearby(users);
+        } catch (e) {
+          console.error('Error en el intervalo de ubicación:', e);
+        }
+      }, 60000);
     })();
-  }, []);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [loggedInUser]);
 
   return (
     <View style={styles.container}>
